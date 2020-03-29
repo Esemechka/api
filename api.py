@@ -187,13 +187,6 @@ def check_auth(request):
     return False
 
 
-def args_to_fill(class_name):
-    args_to_setup = [i for i in class_name.__dict__.keys() if
-                     not ((i.startswith('__')) | (hasattr(getattr(class_name, i), '__call__'))
-                          | (isinstance(getattr(class_name, i), property)))]
-    return args_to_setup
-
-
 def method_handler(request, ctx, store):
     logging.info("method_handler starts")
     request_body = request["body"]
