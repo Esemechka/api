@@ -61,7 +61,7 @@ class ArgumentsField(Field):
 class EmailField(CharField):
     def is_correct(self, email):
         if super().is_correct(email) and \
-                ((not bool(email)) or (bool(email) and ('@' in email))):
+                ((not email) or (email and ('@' in email))):
             return 1
         else:
             return 0
@@ -70,7 +70,7 @@ class EmailField(CharField):
 class PhoneField(Field):
     def is_correct(self, phone_number):
         if (isinstance(phone_number, str) or isinstance(phone_number, numbers.Number)) \
-                and ((not bool(str(phone_number))) or (len(str(phone_number)) == 11 and str(phone_number)[0] == '7')):
+                and ((not phone_number) or (len(str(phone_number)) == 11 and str(phone_number)[0] == '7')):
             return 1
         else:
             return 0
@@ -78,7 +78,7 @@ class PhoneField(Field):
 
 class DateField(Field):
     def is_correct(self, date_value):
-        if not bool(str(date_value)):
+        if not str(date_value):
             return 1
         else:
             try:
@@ -122,32 +122,52 @@ class ClientIDsField(object):
             return 0
 
 
+#class ListOfFields(Field):
+#    def is_correct_attrs(self, data):
+#        cls = self.__class__
+#        list_of_incorrects = []
+#        list_of_corrects_not_null = []
+#        args_to_set = {}
+#        not_correct = 0
+#        for k, v in cls.__dict__.items():
+#            if k.startswith("__") or callable(v) or isinstance(v, property):
+#                continue
+#            elif k in data:
+#                if v.is_correct(data[k]):
+#                    setattr(self, k, data[k])
+#                    args_to_set[k] = data[k]
+#                    if bool(k):
+#                        list_of_corrects_not_null.append(k)
+#                else:
+#                    list_of_incorrects.append(k)
+#            else:
+#                args_to_set[k] = None
+#                setattr(self, k, None)
+#                if not v.required:
+#                    continue
+#                else:
+ #                   not_correct = 1
+  #      return not_correct, list_of_incorrects, list_of_corrects_not_null, args_to_set
+
 class ListOfFields(Field):
     def is_correct_attrs(self, data):
         cls = self.__class__
-        list_of_incorrects = []
-        list_of_corrects_not_null = []
-        args_to_set = {}
-        not_correct = 0
+        dict_of_correct_id = {}
         for k, v in cls.__dict__.items():
-            if k.startswith("__") or callable(v) or isinstance(v, property):
-                continue
-            elif k in data:
-                if v.is_correct(data[k]):
-                    setattr(self, k, data[k])
-                    args_to_set[k] = data[k]
-                    if bool(k):
-                        list_of_corrects_not_null.append(k)
+            if isinstance(v, Field):
+                if k in data:
+                    if v.is_correct(data[k]):
+                        dict_of_correct_id[k] = 1
+                    else:
+                        dict_of_correct_id[k] = 0
+
                 else:
-                    list_of_incorrects.append(k)
-            else:
-                args_to_set[k] = None
-                setattr(self, k, None)
-                if not v.required:
-                    continue
-                else:
-                    not_correct = 1
-        return not_correct, list_of_incorrects, list_of_corrects_not_null, args_to_set
+                    if v.required:
+                        dict_of_correct_id[k] = 0
+                    else:
+                        dict_of_correct_id[k] = 1
+        return dict_of_correct_id
+
 
 
 class ClientsInterestsRequest(ListOfFields):
@@ -187,61 +207,72 @@ def check_auth(request):
     return False
 
 
+def online_score_process(query, store, is_admin):
+    osr = OnlineScoreRequest()
+    osr_dict_of_correct_id = osr.is_correct_attrs(query)
+    if 0 in osr_dict_of_correct_id:
+        not_correct = [k for k, v in osr_dict_of_correct_id.items() if v == 0]
+        code = INVALID_REQUEST
+        response = f'fields {not_correct} are not correct'
+    else:
+        if not (('phone' and 'email' in query.keys) or
+                ('first_name' and 'last_name' in query.keys) or
+                ('first_name' and 'last_name' in query.keys)):
+            response = "Phone and mail or first and last name or gender and bday are null"
+            code = 422
+        else:
+            func_args = {}
+            for k, v in osr_dict_of_correct_id.items():
+                if k in query.keys():
+                    func_args[k] = v
+                else:
+                    func_args[k] = None
+            if is_admin:
+                response = 42
+            else:
+                response = {'score': get_score(store, **func_args)}
+            code = OK
+    return response, code
+
+
+def clients_interests_process(query, store, ctx):
+    cir = ClientsInterestsRequest()
+    cir_dict_of_correct_id = cir.is_correct_attrs(query)
+    if 0 in cir_dict_of_correct_id:
+        not_correct = [k for k, v in cir_dict_of_correct_id.items() if v == 0]
+        code = INVALID_REQUEST
+        response = f'fields {not_correct} are not correct'
+    else:
+        response_dicts = {}
+        for i in cir.client_ids:
+            response_dicts[i] = get_interests(store, ctx)
+        response, code = response_dicts, OK
+
+    return response, code
+
+
 def method_handler(request, ctx, store):
     logging.info("method_handler starts")
     request_body = request["body"]
     mr = MethodRequest()
-    not_correct, list_of_incorrects, list_of_corrects_not_null, args_to_set = mr.is_correct_attrs(request_body)
-    logging.info(f"request is not correct {not_correct};"
-                 f" list of incorrect fields {list_of_incorrects}; "
-                 f"list of correct fields not null {list_of_corrects_not_null}")
-
-    if not_correct == 1:
+    dict_of_correct_id = mr.is_correct_attrs(request_body)
+    if 0 in dict_of_correct_id.values():
         response, code = ERRORS[INVALID_REQUEST], INVALID_REQUEST
-        return response, code
     else:
         ok_auth = check_auth(mr)
         if not ok_auth:
-            return ERRORS[FORBIDDEN], FORBIDDEN
+            response, code = ERRORS[FORBIDDEN], FORBIDDEN
         else:
             query = mr.arguments
             if mr.method == "online_score":
-                osr = OnlineScoreRequest()
-                osr_correct, osr_list_of_incorrects, osr_list_of_not_null, osr_args_to_set = osr.is_correct_attrs(query)
-                ctx['has'] = osr_list_of_not_null
-                print(osr.__dict__)
-
-                if osr_correct == 0:
-                    if len(osr_list_of_incorrects) > 0:
-                        response, code = osr_list_of_incorrects, INVALID_REQUEST
-                        return response, code
-                elif not (
-                        ('phone' in osr_list_of_not_null and 'email' in osr_list_of_not_null) or
-                        ('first_name' in osr_list_of_not_null and 'last_name' in osr_list_of_not_null) or
-                        ('gender' in osr_list_of_not_null and 'birthday' in osr_list_of_not_null)
-                ):
-                    response = "Phone and email or first and last name or gender and birtday are null"
-                    code = 422
-                    return response, code
-                elif mr.is_admin:
-                    return 42, 200
-                else:
-                    response, code = {'score': get_score(store, **osr_args_to_set)}, 200
-                    return response, code
+                response, code = online_score_process(query, store, mr.is_admin)
+                ctx['has'] = {k: v for k, v in query.items() if v}
 
             if mr.method == 'clients_interests':
-                cir = ClientsInterestsRequest()
-                cir_correct, cir_list_of_incorrects, cir_list_of_corrects_not_null, cir_args_to_set = cir.is_correct_attrs(query)
-                if (cir_correct == 0) and len(cir_list_of_incorrects) > 0:
-                    response, code = cir_list_of_incorrects, INVALID_REQUEST
-                    return response, code
-                else:
-                    response_dicts = {}
-                    ctx['nclients'] = len(cir.client_ids)
-                    for i in cir.client_ids:
-                        response_dicts[i] = get_interests(store, ctx)
-                    response, code = response_dicts, OK
-                    return response, code
+                response, code = clients_interests_process(request, ctx, store)
+                ctx['nclients'] = len(request.client_ids)
+
+    return response, code
 
 
 class MainHTTPHandler(BaseHTTPRequestHandler):
@@ -264,8 +295,7 @@ class MainHTTPHandler(BaseHTTPRequestHandler):
             code = BAD_REQUEST
 
         if request:
-            path = self.path.strip("/") #request path
-            print('path', path)
+            path = self.path.strip("/")
             logging.info("%s: %s %s" % (self.path, data_string, context["request_id"]))
             if path in self.router:
                 try:
