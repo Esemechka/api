@@ -183,8 +183,8 @@ def check_auth(request):
     else:
         msg = (request.account + request.login + SALT).encode('utf-8')
         digest = hashlib.sha512(msg).hexdigest()
-        #logging.info(f'msg is {msg}')
-        #logging.info(f'digest is {digest}, \n token is {request.token}')
+        logging.info(f'msg is {msg}')
+        logging.info(f'digest is {digest}, \n token is {request.token}')
     if digest == request.token:
         return True
     else:
