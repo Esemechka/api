@@ -102,7 +102,7 @@ class BirthDayField(Field):
 
 class GenderField(Field):
     def is_correct(self, sex):
-        if not bool(str(sex)):
+        if not sex:
             return 1
         else:
             if isinstance(sex,  numbers.Number) and sex in [0, 1, 2]:
@@ -111,7 +111,7 @@ class GenderField(Field):
                 return 0
 
 
-class ClientIDsField(object):
+class ClientIDsField(Field):
     def __init__(self, required):
         self.required = required
 
@@ -122,34 +122,7 @@ class ClientIDsField(object):
             return 0
 
 
-#class ListOfFields(Field):
-#    def is_correct_attrs(self, data):
-#        cls = self.__class__
-#        list_of_incorrects = []
-#        list_of_corrects_not_null = []
-#        args_to_set = {}
-#        not_correct = 0
-#        for k, v in cls.__dict__.items():
-#            if k.startswith("__") or callable(v) or isinstance(v, property):
-#                continue
-#            elif k in data:
-#                if v.is_correct(data[k]):
-#                    setattr(self, k, data[k])
-#                    args_to_set[k] = data[k]
-#                    if bool(k):
-#                        list_of_corrects_not_null.append(k)
-#                else:
-#                    list_of_incorrects.append(k)
-#            else:
-#                args_to_set[k] = None
-#                setattr(self, k, None)
-#                if not v.required:
-#                    continue
-#                else:
- #                   not_correct = 1
-  #      return not_correct, list_of_incorrects, list_of_corrects_not_null, args_to_set
-
-class ListOfFields(Field):
+class ListOfFields():
     def is_correct_attrs(self, data):
         cls = self.__class__
         dict_of_correct_id = {}
@@ -168,6 +141,14 @@ class ListOfFields(Field):
                         dict_of_correct_id[k] = 1
         return dict_of_correct_id
 
+    def set_list_of_atrs(self, data):
+        cls = self.__class__
+        for k, v in cls.__dict__.items():
+            if isinstance(v, Field):
+                if k in data:
+                    setattr(self, k, data[k])
+                else:
+                    setattr(self, k, None)
 
 
 class ClientsInterestsRequest(ListOfFields):
@@ -200,24 +181,27 @@ def check_auth(request):
     if request.is_admin:
         digest = hashlib.sha512((datetime.datetime.now().strftime("%Y%m%d%H") + ADMIN_SALT).encode('utf-8')).hexdigest()
     else:
-        digest = hashlib.sha512((str(request.account) + str(request.login) + str(SALT)).encode('utf-8')).hexdigest()
-        print(digest)
+        msg = (request.account + request.login + SALT).encode('utf-8')
+        digest = hashlib.sha512(msg).hexdigest()
+        #logging.info(f'msg is {msg}')
+        #logging.info(f'digest is {digest}, \n token is {request.token}')
     if digest == request.token:
         return True
-    return False
+    else:
+        return False
 
 
 def online_score_process(query, store, is_admin):
     osr = OnlineScoreRequest()
     osr_dict_of_correct_id = osr.is_correct_attrs(query)
-    if 0 in osr_dict_of_correct_id:
+    if 0 in osr_dict_of_correct_id.values():
         not_correct = [k for k, v in osr_dict_of_correct_id.items() if v == 0]
         code = INVALID_REQUEST
         response = f'fields {not_correct} are not correct'
     else:
-        if not (('phone' and 'email' in query.keys) or
-                ('first_name' and 'last_name' in query.keys) or
-                ('first_name' and 'last_name' in query.keys)):
+        if not (all(x in query.keys() for x in ['phone', 'email']) or
+                all(x in query.keys() for x in ['first_name', 'last_name']) or
+                all(x in query.keys() for x in ['gender', 'birthday'])):
             response = "Phone and mail or first and last name or gender and bday are null"
             code = 422
         else:
@@ -228,7 +212,7 @@ def online_score_process(query, store, is_admin):
                 else:
                     func_args[k] = None
             if is_admin:
-                response = 42
+                response = {'score': 42}
             else:
                 response = {'score': get_score(store, **func_args)}
             code = OK
@@ -238,15 +222,16 @@ def online_score_process(query, store, is_admin):
 def clients_interests_process(query, store, ctx):
     cir = ClientsInterestsRequest()
     cir_dict_of_correct_id = cir.is_correct_attrs(query)
-    if 0 in cir_dict_of_correct_id:
+    if 0 in cir_dict_of_correct_id.values():
         not_correct = [k for k, v in cir_dict_of_correct_id.items() if v == 0]
         code = INVALID_REQUEST
         response = f'fields {not_correct} are not correct'
     else:
         response_dicts = {}
-        for i in cir.client_ids:
+        for i in query['client_ids']:
             response_dicts[i] = get_interests(store, ctx)
         response, code = response_dicts, OK
+        ctx['nclients'] = len(query['client_ids'])
 
     return response, code
 
@@ -255,22 +240,23 @@ def method_handler(request, ctx, store):
     logging.info("method_handler starts")
     request_body = request["body"]
     mr = MethodRequest()
+
     dict_of_correct_id = mr.is_correct_attrs(request_body)
     if 0 in dict_of_correct_id.values():
         response, code = ERRORS[INVALID_REQUEST], INVALID_REQUEST
     else:
+        mr.set_list_of_atrs(request_body)
         ok_auth = check_auth(mr)
         if not ok_auth:
             response, code = ERRORS[FORBIDDEN], FORBIDDEN
         else:
-            query = mr.arguments
+            query = mr.__getattribute__('arguments')
             if mr.method == "online_score":
                 response, code = online_score_process(query, store, mr.is_admin)
-                ctx['has'] = {k: v for k, v in query.items() if v}
+                ctx['has'] = {k: v for k, v in query.items()}
 
             if mr.method == 'clients_interests':
-                response, code = clients_interests_process(request, ctx, store)
-                ctx['nclients'] = len(request.client_ids)
+                response, code = clients_interests_process(query, store, ctx)
 
     return response, code
 
