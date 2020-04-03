@@ -48,7 +48,7 @@ class Field(object):
         self.nullable = nullable
 
 
-class ListOfFields():
+class ListOfFields:
     def is_correct_attrs(self, data):
         cls = self.__class__
         atrs_correctness = {}
