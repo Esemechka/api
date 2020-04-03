@@ -75,7 +75,6 @@ class ListOfFields():
         return atrs_correctness
 
     def is_correct(self, data):
-        #cls = self.__class__
         attrs_correctness = self.is_correct_attrs(data)
         all_errs = []
         for attr, correctness in attrs_correctness.items():
