@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import abc
+from weakref import WeakKeyDictionary
 import numbers
 import json
 import datetime
@@ -43,148 +43,164 @@ config = {
 
 
 class Field(object):
-    def __init__(self, required=False, nullable=False):
+    def __init__(self, default, required=False, nullable=False):
         self.required = required
         self.nullable = nullable
+        self.default = default
+        self.data = WeakKeyDictionary()
 
+    def __get__(self, instance, owner):
+        return self.data.get(instance, self.default)
 
-class ListOfFields:
-    def is_correct_attrs(self, data):
-        cls = self.__class__
-        atrs_correctness = {}
-        for k, v in cls.__dict__.items():
-            if not isinstance(v, Field):
-                continue
-
-            if k in data:
-                data_k = data[k]
-                if not data_k:
-                    if v.nullable:
-                        atrs_correctness[k] = True, '1'
-                    else:
-                        atrs_correctness[k] = False, f'{k} is not nullable'
-                else:
-                    full_msg = f'Error in field {k}: ' + v.is_correct(data_k)[1]
-                    atrs_correctness[k] = v.is_correct(data_k)[0], full_msg
-            else:
-                if v.required:
-                    atrs_correctness[k] = False, f'{k} is required'
-                else:
-                    atrs_correctness[k] = True, '1'
-
-        return atrs_correctness
-
-    def is_correct(self, data):
-        attrs_correctness = self.is_correct_attrs(data)
-        all_errs = []
-        for attr, correctness in attrs_correctness.items():
-            is_correct, errs = correctness
-            if not is_correct:
-                all_errs.append(errs)
-
-        return len(all_errs), all_errs
-
-    def set_list_of_atrs(self, data):
-        cls = self.__class__
-        for k, v in cls.__dict__.items():
-            if isinstance(v, Field):
-                if k in data:
-                    setattr(self, k, data[k])
-                else:
-                    setattr(self, k, None)
+    def __set__(self, instance, value):
+        if not self.nullable and not value:
+            raise ValueError("Value is not nullable: %s" % value)
+        self.data[instance] = value
 
 
 class CharField(Field):
-    def is_correct(self, input_data):
-        if isinstance(input_data, str):
-            return True, ''
-        else:
-            return False, 'field must bе string'
+
+    def __init__(self, required, nullable, default):
+        super().__init__(required=required, nullable=nullable, default=default)
+
+    def __set__(self, instance, value):
+        super().__set__(instance, value)
+        if not isinstance(value, str) and value:
+            raise ValueError("Non string value are not allowed: %s" % value)
+        self.data[instance] = value
 
 
 class ArgumentsField(Field):
-    def is_correct(self, input_data):
-        if isinstance(input_data, dict):
-            return True, ''
-        else:
-            return False, 'field must bе list'
+
+    def __init__(self, required, nullable, default):
+        super().__init__(required=required, nullable=nullable, default=default)
+
+    def __set__(self, instance, value):
+        super().__set__(instance, value)
+        if not isinstance(value, dict) and value:
+            raise ValueError("Value must be dict: %s" % value)
+        self.data[instance] = value
 
 
-class EmailField(CharField):
-    def is_correct(self, email):
-        if super().is_correct(email) and ('@' in email):
-            return True, ''
-        else:
-            return False, 'email should contain "@"'
+class EmailField(Field):
+    def __init__(self, required, nullable, default):
+        super().__init__(required=required, nullable=nullable, default=default)
+
+    def __set__(self, instance, value):
+        super().__set__(instance, value)
+        if value and '@' not in value:
+            raise ValueError("Value should contain '@': %s" % value)
+        self.data[instance] = value
 
 
 class PhoneField(Field):
-    def is_correct(self, phone_number):
-        if (isinstance(phone_number, str) or isinstance(phone_number, numbers.Number)) \
-                and (len(str(phone_number)) == 11 and str(phone_number)[0] == '7'):
-            return True, ''
-        else:
-            return False, 'phone number should starts with 7 and contain 11 characters'
+
+    def __init__(self, required, nullable, default):
+        super().__init__(required=required, nullable=nullable, default=default)
+
+    def __set__(self, instance, value):
+        super().__set__(instance, value)
+        if value and ((not (isinstance(value, str) or isinstance(value, numbers.Number)))
+                      or (len(str(value)) != 11) or (str(value)[0] != '7')):
+            raise ValueError("Value should starts with 7 and be len of 11: %s" % value)
+        self.data[instance] = value
 
 
 class DateField(Field):
-    def is_correct(self, date_value):
-        try:
-            datetime.datetime.strptime(date_value, '%d.%m.%Y')
-            return True, ''
-        except:
-            return False, 'date format should be "dd.mm.yyyy"'
+
+    def __init__(self, required, nullable, default):
+        super().__init__(required=required, nullable=nullable, default=default)
+
+    def __set__(self, instance, value):
+        super().__set__(instance, value)
+        if value:
+            try:
+                datetime.datetime.strptime(value, '%d.%m.%Y')
+            except:
+                raise ValueError("Date must be dd.mm.yyyy: %s" % value)
+        self.data[instance] = value
 
 
 class BirthDayField(DateField):
-    def is_correct(self, date_value):
-        if (super().is_correct(date_value)[0]
-                and
-                datetime.datetime.today().year - datetime.datetime.strptime(date_value, '%d.%m.%Y').year < 70):
-            return True, ''
-        else:
-            return False, super().is_correct(date_value)[1]+' and be less then 70 years ago'
+
+    def __init__(self, required, nullable, default):
+        super().__init__(required=required, nullable=nullable, default=default)
+
+    def __set__(self, instance, value):
+        super().__set__(instance, value)
+        if value and not (datetime.datetime.today().year - datetime.datetime.strptime(value, '%d.%m.%Y').year < 70):
+            raise ValueError("Date %s is 70 years ago from now" % value)
+        self.data[instance] = value
 
 
 class GenderField(Field):
-    def is_correct(self, sex):
-        if isinstance(sex,  numbers.Number) and sex in [0, 1, 2]:
-            return True, ''
-        else:
-            return False, 'sex may be only 0, 1 or 2'
+
+    def __init__(self, required, nullable, default):
+        super().__init__(required=required, nullable=nullable, default=default)
+
+    def __set__(self, instance, value):
+        super().__set__(instance, value)
+        if value and not (isinstance(value,  numbers.Number) and value in [0, 1, 2]):
+            raise ValueError("Value %s must be number 0, 1 or 2" % value)
+        self.data[instance] = value
 
 
 class ClientIDsField(Field):
     def __init__(self, required):
-        super().__init__(required=required)
+        super().__init__(required=required, default=None)
 
-    def is_correct(self, clients):
-        if isinstance(clients, list) and all(isinstance(x, numbers.Number) for x in clients):
-            return True, ''
-        else:
-            return False, 'ids should be list of numbers'
+    def __set__(self, instance, value):
+        super().__set__(instance, value)
+        if value and not (isinstance(value, list) and all(isinstance(x, numbers.Number) for x in value)):
+            raise ValueError("Value %s must be number 0, 1 or 2" % value)
+        self.data[instance] = value
 
 
-class ClientsInterestsRequest(ListOfFields):
+class ClientsInterestsRequest(Field):
     client_ids = ClientIDsField(required=True)
-    date = DateField(required=False, nullable=True)
+    date = DateField(required=False, nullable=True, default=None)
+
+    def __init__(self, client_ids=None, date=None):
+        self.client_ids = client_ids
+        self.date = date
 
 
-class OnlineScoreRequest(ListOfFields):
-    first_name = CharField(required=False, nullable=True)
-    last_name = CharField(required=False, nullable=True)
-    email = EmailField(required=False, nullable=True)
-    phone = PhoneField(required=False, nullable=True)
-    birthday = BirthDayField(required=False, nullable=True)
-    gender = GenderField(required=False, nullable=True)
+class OnlineScoreRequest(Field):
+    first_name = CharField(required=False, nullable=True, default=None)
+    last_name = CharField(required=False, nullable=True, default=None)
+    email = EmailField(required=False, nullable=True, default=None)
+    phone = PhoneField(required=False, nullable=True, default=None)
+    birthday = BirthDayField(required=False, nullable=True, default=None)
+    gender = GenderField(required=False, nullable=True, default=None)
+
+    def __init__(self, first_name=None, last_name=None, email=None, phone=None,
+                 birthday=None, gender=None):
+        self.first_name = first_name
+        self.last_name = last_name
+        self.email = email
+        self.phone = phone
+        self.birthday = birthday
+        self.gender = gender
+
+        if not ((self.phone and self.email) or (self.first_name and self.last_name)
+                or (self.gender is not None and self.birthday)):
+            raise ValueError("Phone and mail or first and last name or gender and bday are not exist")
 
 
-class MethodRequest(ListOfFields):
-    account = CharField(required=False, nullable=True)
-    login = CharField(required=True, nullable=True)
-    token = CharField(required=True, nullable=True)
-    arguments = ArgumentsField(required=True, nullable=True)
-    method = CharField(required=True, nullable=False)
+class MethodRequest(Field):
+    account = CharField(required=False, nullable=True, default=None)
+    login = CharField(required=True, nullable=True, default=None)
+    token = CharField(required=True, nullable=True, default=None)
+    arguments = ArgumentsField(required=True, nullable=True, default=None)
+    method = CharField(required=True, nullable=False, default=None)
+
+    def __init__(self, account, login, token, arguments, method):
+        #super().__init__(data_input)
+        self.account = account
+        self.login = login
+        self.token = token
+        self.arguments = arguments
+        self.method = method
 
     @property
     def is_admin(self):
@@ -216,39 +232,66 @@ def gen_err_message(all_errs):
 
 
 def online_score_process(query, store, is_admin):
-    osr = OnlineScoreRequest()
-    osr_is_not_correct, all_errs = osr.is_correct(query)
-    if osr_is_not_correct:
-        code = INVALID_REQUEST
-        response = gen_err_message(all_errs)
-    else:
-        if not (all(x in query.keys() for x in ['phone', 'email']) or
-                all(x in query.keys() for x in ['first_name', 'last_name']) or
-                all(x in query.keys() for x in ['gender', 'birthday'])):
-            response = "Phone and mail or first and last name or gender and bday are not exist"
-            code = 422
+    try:
+        osr = OnlineScoreRequest(**query)
+        if is_admin:
+            response = {'score': 42}
         else:
-            if is_admin:
-                response = {'score': 42}
-            else:
-                osr.set_list_of_atrs(query)
-                response = {'score': get_score(store, **osr.__dict__)}
-            code = OK
+            response = {'score': get_score(store,
+                                           phone=osr.phone,
+                                           email=osr.email,
+                                           birthday=osr.birthday,
+                                           gender=osr.gender,
+                                           first_name=osr.first_name,
+                                           last_name=osr.last_name)}
+        code = OK
+    except Exception as e:
+        code = INVALID_REQUEST
+        response = str(e)
     return response, code
+    #if osr_is_not_correct:
+    #    code = INVALID_REQUEST
+    #    response = gen_err_message(all_errs)
+    #else:
+    #    if not (all(x in query.keys() for x in ['phone', 'email']) or
+    #            all(x in query.keys() for x in ['first_name', 'last_name']) or
+    #            all(x in query.keys() for x in ['gender', 'birthday'])):
+    #        response = "Phone and mail or first and last name or gender and bday are not exist"
+    #        code = 422
+    #    else:
+    #        if is_admin:
+
+    #        else:
+    #            osr.set_list_of_atrs(query)
+     #           response = {'score': get_score(store, **osr.__dict__)}
+     #       code = OK
+    #return response, code
 
 
 def clients_interests_process(query, store, ctx):
-    cir = ClientsInterestsRequest()
-    cir_is_not_correct, all_errs = cir.is_correct(query)
-    if cir_is_not_correct:
-        code = INVALID_REQUEST
-        response = gen_err_message(all_errs)
-    else:
+    try:
+        cir = ClientsInterestsRequest(**query)
         response_dicts = {}
-        for i in query['client_ids']:
+        for i in cir.client_ids:
             response_dicts[i] = get_interests(store, ctx)
-        response, code = response_dicts, OK
-        ctx['nclients'] = len(query['client_ids'])
+            response, code = response_dicts, OK
+            ctx['nclients'] = len(query['client_ids'])
+    except Exception as e:
+        code = INVALID_REQUEST
+        response = str(e)
+
+
+    #cir = ClientsInterestsRequest()
+    #cir_is_not_correct, all_errs = cir.is_correct(query)
+    #if cir_is_not_correct:
+    #    code = INVALID_REQUEST
+    #    response = gen_err_message(all_errs)
+    #else:
+    #    response_dicts = {}
+    #    for i in query['client_ids']:
+    #        response_dicts[i] = get_interests(store, ctx)
+    #    response, code = response_dicts, OK
+    #    ctx['nclients'] = len(query['client_ids'])
 
     return response, code
 
@@ -256,12 +299,8 @@ def clients_interests_process(query, store, ctx):
 def method_handler(request, ctx, store):
     logging.info("method_handler starts")
     request_body = request["body"]
-    mr = MethodRequest()
-    mr_is_not_correct, all_errs = mr.is_correct(request_body)
-    if mr_is_not_correct:
-        response, code = ERRORS[INVALID_REQUEST], INVALID_REQUEST
-    else:
-        mr.set_list_of_atrs(request_body)
+    try:
+        mr = MethodRequest(**request_body)
         ok_auth = check_auth(mr)
         if not ok_auth:
             response, code = ERRORS[FORBIDDEN], FORBIDDEN
@@ -273,6 +312,8 @@ def method_handler(request, ctx, store):
 
             if mr.method == 'clients_interests':
                 response, code = clients_interests_process(query, store, ctx)
+    except Exception as e:
+        response, code = ERRORS[INVALID_REQUEST], INVALID_REQUEST
 
     return response, code
 
@@ -305,7 +346,7 @@ class MainHTTPHandler(BaseHTTPRequestHandler):
                                                        "headers": self.headers},
                                                        context, self.store)
                 except Exception as e:
-                    logging.exception("Unexpected error: %s" % e)
+                    logging.exception("Unexpected error: %s" % str(e))
                     code = INTERNAL_ERROR
             else:
                 code = NOT_FOUND
