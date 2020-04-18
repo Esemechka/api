@@ -195,7 +195,6 @@ class MethodRequest(Field):
     method = CharField(required=True, nullable=False, default=None)
 
     def __init__(self, account, login, token, arguments, method):
-        #super().__init__(data_input)
         self.account = account
         self.login = login
         self.token = token
@@ -249,23 +248,6 @@ def online_score_process(query, store, is_admin):
         code = INVALID_REQUEST
         response = str(e)
     return response, code
-    #if osr_is_not_correct:
-    #    code = INVALID_REQUEST
-    #    response = gen_err_message(all_errs)
-    #else:
-    #    if not (all(x in query.keys() for x in ['phone', 'email']) or
-    #            all(x in query.keys() for x in ['first_name', 'last_name']) or
-    #            all(x in query.keys() for x in ['gender', 'birthday'])):
-    #        response = "Phone and mail or first and last name or gender and bday are not exist"
-    #        code = 422
-    #    else:
-    #        if is_admin:
-
-    #        else:
-    #            osr.set_list_of_atrs(query)
-     #           response = {'score': get_score(store, **osr.__dict__)}
-     #       code = OK
-    #return response, code
 
 
 def clients_interests_process(query, store, ctx):
@@ -279,19 +261,6 @@ def clients_interests_process(query, store, ctx):
     except Exception as e:
         code = INVALID_REQUEST
         response = str(e)
-
-
-    #cir = ClientsInterestsRequest()
-    #cir_is_not_correct, all_errs = cir.is_correct(query)
-    #if cir_is_not_correct:
-    #    code = INVALID_REQUEST
-    #    response = gen_err_message(all_errs)
-    #else:
-    #    response_dicts = {}
-    #    for i in query['client_ids']:
-    #        response_dicts[i] = get_interests(store, ctx)
-    #    response, code = response_dicts, OK
-    #    ctx['nclients'] = len(query['client_ids'])
 
     return response, code
 
@@ -333,7 +302,7 @@ class MainHTTPHandler(BaseHTTPRequestHandler):
         request = None
         try:
             data_string = self.rfile.read(int(self.headers['Content-Length'])).decode()
-            request = json.loads(data_string)#.decode("ascii"))
+            request = json.loads(data_string)
         except:
             code = BAD_REQUEST
 
