@@ -168,8 +168,6 @@ class MethodRequest(Model):
     token = CharField(required=True, nullable=True, default=None)
     arguments = ArgumentsField(required=True, nullable=True, default=None)
     method = CharField(required=True, nullable=False, default=None)
-
-
     @property
     def is_admin(self):
         return self.login == ADMIN_LOGIN
