@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="d00871f5-104c-4bc1-8123-cbbadd0bf48a" name="Default Changelist" comment="refacor" />
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectId" id="1ZoJu5Gjdr7xlUQATZpZVSvGh2H" />
+  <component name="PropertiesComponent">
+    <property name="WebServerToolWindowFactoryState" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="d00871f5-104c-4bc1-8123-cbbadd0bf48a" name="Default Changelist" comment="" />
+      <created>1585499732821</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1585499732821</updated>
+      <workItem from="1585499738710" duration="64120000" />
+      <workItem from="1586439665473" duration="599000" />
+      <workItem from="1586684696476" duration="14305000" />
+      <workItem from="1586796804383" duration="12008000" />
+      <workItem from="1587020307017" duration="3634000" />
+      <workItem from="1587123382613" duration="303000" />
+      <workItem from="1587189589886" duration="28795000" />
+    </task>
+    <task id="LOCAL-00001" summary="api">
+      <created>1585499914502</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1585499914502</updated>
+    </task>
+    <task id="LOCAL-00002" summary="scoring">
+      <created>1585499929688</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1585499929688</updated>
+    </task>
+    <task id="LOCAL-00003" summary="test">
+      <created>1585499953455</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1585499953455</updated>
+    </task>
+    <task id="LOCAL-00004" summary="remove nonused func">
+      <created>1585509226669</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1585509226669</updated>
+    </task>
+    <task id="LOCAL-00005" summary="refactoring">
+      <created>1585695012261</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1585695012261</updated>
+    </task>
+    <task id="LOCAL-00006" summary="refacor">
+      <created>1585770109108</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1585770109108</updated>
+    </task>
+    <task id="LOCAL-00007" summary="refacor">
+      <created>1585770209363</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1585770209363</updated>
+    </task>
+    <task id="LOCAL-00008" summary="refacor">
+      <created>1585949229759</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1585949229759</updated>
+    </task>
+    <task id="LOCAL-00009" summary="refacor">
+      <created>1585949654786</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1585949654786</updated>
+    </task>
+    <task id="LOCAL-00010" summary="refacor">
+      <created>1585949841398</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1585949841398</updated>
+    </task>
+    <task id="LOCAL-00011" summary="refacor">
+      <created>1587217847437</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1587217847437</updated>
+    </task>
+    <task id="LOCAL-00012" summary="rm comments">
+      <created>1587219246366</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1587219246366</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="COLUMN_ORDER" />
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="api" />
+    <MESSAGE value="scoring" />
+    <MESSAGE value="test" />
+    <MESSAGE value="remove nonused func" />
+    <MESSAGE value="refactoring" />
+    <MESSAGE value="refacor" />
+    <MESSAGE value="rm comments" />
+    <option name="LAST_COMMIT_MESSAGE" value="rm comments" />
+  </component>
+</project>

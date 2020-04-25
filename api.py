@@ -60,56 +60,52 @@ class Field(object):
 
 class CharField(Field):
 
-    def __init__(self, required, nullable, default):
-        super().__init__(required=required, nullable=nullable, default=default)
+    #def __init__(self, required, nullable, default):
+    #    super().__init__(required=required, nullable=nullable, default=default)
 
     def __set__(self, instance, value):
         super().__set__(instance, value)
         if not isinstance(value, str) and value:
             raise ValueError("Non string value are not allowed: %s" % value)
-        self.data[instance] = value
 
 
 class ArgumentsField(Field):
 
-    def __init__(self, required, nullable, default):
-        super().__init__(required=required, nullable=nullable, default=default)
+    #def __init__(self, required, nullable, default):
+    #    super().__init__(required=required, nullable=nullable, default=default)
 
     def __set__(self, instance, value):
         super().__set__(instance, value)
         if not isinstance(value, dict) and value:
             raise ValueError("Value must be dict: %s" % value)
-        self.data[instance] = value
 
 
 class EmailField(Field):
-    def __init__(self, required, nullable, default):
-        super().__init__(required=required, nullable=nullable, default=default)
+    #def __init__(self, required, nullable, default):
+    #    super().__init__(required=required, nullable=nullable, default=default)
 
     def __set__(self, instance, value):
         super().__set__(instance, value)
         if value and '@' not in value:
             raise ValueError("Value should contain '@': %s" % value)
-        self.data[instance] = value
 
 
 class PhoneField(Field):
 
-    def __init__(self, required, nullable, default):
-        super().__init__(required=required, nullable=nullable, default=default)
+    #def __init__(self, required, nullable, default):
+    #    super().__init__(required=required, nullable=nullable, default=default)
 
     def __set__(self, instance, value):
         super().__set__(instance, value)
         if value and ((not (isinstance(value, str) or isinstance(value, numbers.Number)))
                       or (len(str(value)) != 11) or (str(value)[0] != '7')):
             raise ValueError("Value should starts with 7 and be len of 11: %s" % value)
-        self.data[instance] = value
 
 
 class DateField(Field):
 
-    def __init__(self, required, nullable, default):
-        super().__init__(required=required, nullable=nullable, default=default)
+    #def __init__(self, required, nullable, default):
+    #    super().__init__(required=required, nullable=nullable, default=default)
 
     def __set__(self, instance, value):
         super().__set__(instance, value)
@@ -118,31 +114,28 @@ class DateField(Field):
                 datetime.datetime.strptime(value, '%d.%m.%Y')
             except:
                 raise ValueError("Date must be dd.mm.yyyy: %s" % value)
-        self.data[instance] = value
 
 
 class BirthDayField(DateField):
 
-    def __init__(self, required, nullable, default):
-        super().__init__(required=required, nullable=nullable, default=default)
+    #def __init__(self, required, nullable, default):
+    #    super().__init__(required=required, nullable=nullable, default=default)
 
     def __set__(self, instance, value):
         super().__set__(instance, value)
         if value and not (datetime.datetime.today().year - datetime.datetime.strptime(value, '%d.%m.%Y').year < 70):
             raise ValueError("Date %s is 70 years ago from now" % value)
-        self.data[instance] = value
 
 
 class GenderField(Field):
 
-    def __init__(self, required, nullable, default):
-        super().__init__(required=required, nullable=nullable, default=default)
+    #def __init__(self, required, nullable, default):
+    #    super().__init__(required=required, nullable=nullable, default=default)
 
     def __set__(self, instance, value):
         super().__set__(instance, value)
         if value and not (isinstance(value,  numbers.Number) and value in [0, 1, 2]):
             raise ValueError("Value %s must be number 0, 1 or 2" % value)
-        self.data[instance] = value
 
 
 class ClientIDsField(Field):
@@ -153,19 +146,38 @@ class ClientIDsField(Field):
         super().__set__(instance, value)
         if value and not (isinstance(value, list) and all(isinstance(x, numbers.Number) for x in value)):
             raise ValueError("Value %s must be number 0, 1 or 2" % value)
-        self.data[instance] = value
 
 
-class ClientsInterestsRequest(Field):
-    client_ids = ClientIDsField(required=True)
-    date = DateField(required=False, nullable=True, default=None)
+class Model(Field):
+    def __init__(self, **kwargs):
+        cls = self.__class__
+        dct = cls.__dict__
+        for k, v in dct.items():
+            if isinstance(v, Field):
+                if k in kwargs.keys():
+                    setattr(self, k, kwargs[k])
+                else:
+                    if v.required:
+                        raise ValueError(f"Nesassary field {k} is absent")
+                    setattr(self, k, None)
 
-    def __init__(self, client_ids=None, date=None):
-        self.client_ids = client_ids
-        self.date = date
+
+class MethodRequest(Model):
+    account = CharField(required=False, nullable=True, default=None)
+    login = CharField(required=True, nullable=True, default=None)
+    token = CharField(required=True, nullable=True, default=None)
+    arguments = ArgumentsField(required=True, nullable=True, default=None)
+    method = CharField(required=True, nullable=False, default=None)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    @property
+    def is_admin(self):
+        return self.login == ADMIN_LOGIN
 
 
-class OnlineScoreRequest(Field):
+class OnlineScoreRequest(Model):
     first_name = CharField(required=False, nullable=True, default=None)
     last_name = CharField(required=False, nullable=True, default=None)
     email = EmailField(required=False, nullable=True, default=None)
@@ -173,37 +185,19 @@ class OnlineScoreRequest(Field):
     birthday = BirthDayField(required=False, nullable=True, default=None)
     gender = GenderField(required=False, nullable=True, default=None)
 
-    def __init__(self, first_name=None, last_name=None, email=None, phone=None,
-                 birthday=None, gender=None):
-        self.first_name = first_name
-        self.last_name = last_name
-        self.email = email
-        self.phone = phone
-        self.birthday = birthday
-        self.gender = gender
-
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         if not ((self.phone and self.email) or (self.first_name and self.last_name)
                 or (self.gender is not None and self.birthday)):
             raise ValueError("Phone and mail or first and last name or gender and bday are not exist")
 
 
-class MethodRequest(Field):
-    account = CharField(required=False, nullable=True, default=None)
-    login = CharField(required=True, nullable=True, default=None)
-    token = CharField(required=True, nullable=True, default=None)
-    arguments = ArgumentsField(required=True, nullable=True, default=None)
-    method = CharField(required=True, nullable=False, default=None)
+class ClientsInterestsRequest(Model):
+    client_ids = ClientIDsField(required=True)
+    date = DateField(required=False, nullable=True, default=None)
 
-    def __init__(self, account, login, token, arguments, method):
-        self.account = account
-        self.login = login
-        self.token = token
-        self.arguments = arguments
-        self.method = method
-
-    @property
-    def is_admin(self):
-        return self.login == ADMIN_LOGIN
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 
 def check_auth(request):
@@ -221,13 +215,7 @@ def check_auth(request):
 
 
 def gen_err_message(all_errs):
-    if len(all_errs) == 1:
-        return all_errs[0]
-    else:
-        whole_msg = ''
-        for err in all_errs[:-1]:
-            whole_msg = whole_msg+err+'; '
-        return whole_msg+all_errs[-1]
+    return '; '.join(all_errs)
 
 
 def online_score_process(query, store, is_admin):
