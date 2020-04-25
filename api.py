@@ -169,8 +169,6 @@ class MethodRequest(Model):
     arguments = ArgumentsField(required=True, nullable=True, default=None)
     method = CharField(required=True, nullable=False, default=None)
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     @property
     def is_admin(self):
@@ -195,9 +193,6 @@ class OnlineScoreRequest(Model):
 class ClientsInterestsRequest(Model):
     client_ids = ClientIDsField(required=True)
     date = DateField(required=False, nullable=True, default=None)
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
 
 def check_auth(request):
