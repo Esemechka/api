@@ -60,9 +60,6 @@ class Field(object):
 
 class CharField(Field):
 
-    #def __init__(self, required, nullable, default):
-    #    super().__init__(required=required, nullable=nullable, default=default)
-
     def __set__(self, instance, value):
         super().__set__(instance, value)
         if not isinstance(value, str) and value:
@@ -71,9 +68,6 @@ class CharField(Field):
 
 class ArgumentsField(Field):
 
-    #def __init__(self, required, nullable, default):
-    #    super().__init__(required=required, nullable=nullable, default=default)
-
     def __set__(self, instance, value):
         super().__set__(instance, value)
         if not isinstance(value, dict) and value:
@@ -81,8 +75,6 @@ class ArgumentsField(Field):
 
 
 class EmailField(Field):
-    #def __init__(self, required, nullable, default):
-    #    super().__init__(required=required, nullable=nullable, default=default)
 
     def __set__(self, instance, value):
         super().__set__(instance, value)
@@ -92,9 +84,6 @@ class EmailField(Field):
 
 class PhoneField(Field):
 
-    #def __init__(self, required, nullable, default):
-    #    super().__init__(required=required, nullable=nullable, default=default)
-
     def __set__(self, instance, value):
         super().__set__(instance, value)
         if value and ((not (isinstance(value, str) or isinstance(value, numbers.Number)))
@@ -103,9 +92,6 @@ class PhoneField(Field):
 
 
 class DateField(Field):
-
-    #def __init__(self, required, nullable, default):
-    #    super().__init__(required=required, nullable=nullable, default=default)
 
     def __set__(self, instance, value):
         super().__set__(instance, value)
@@ -118,9 +104,6 @@ class DateField(Field):
 
 class BirthDayField(DateField):
 
-    #def __init__(self, required, nullable, default):
-    #    super().__init__(required=required, nullable=nullable, default=default)
-
     def __set__(self, instance, value):
         super().__set__(instance, value)
         if value and not (datetime.datetime.today().year - datetime.datetime.strptime(value, '%d.%m.%Y').year < 70):
@@ -128,9 +111,6 @@ class BirthDayField(DateField):
 
 
 class GenderField(Field):
-
-    #def __init__(self, required, nullable, default):
-    #    super().__init__(required=required, nullable=nullable, default=default)
 
     def __set__(self, instance, value):
         super().__set__(instance, value)
