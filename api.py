@@ -217,8 +217,8 @@ def clients_interests_process(query, store, ctx):
         response_dicts = {}
         for i in cir.client_ids:
             response_dicts[i] = get_interests(store, ctx)
-            response, code = response_dicts, OK
-            ctx['nclients'] = len(query['client_ids'])
+        response, code = response_dicts, OK
+        ctx['nclients'] = len(query['client_ids'])
     except Exception as e:
         code = INVALID_REQUEST
         response = str(e)
