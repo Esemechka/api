@@ -152,6 +152,11 @@ class MethodRequest(Model):
     def is_admin(self):
         return self.login == ADMIN_LOGIN
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.method not in ['clients_interests', 'online_score']:
+            raise ValueError("Method might only clients_interests or online_score")
+
 
 class OnlineScoreRequest(Model):
     first_name = CharField(required=False, nullable=True, default=None)
@@ -243,7 +248,7 @@ def method_handler(request, ctx, store):
             if mr.method == 'clients_interests':
                 response, code = clients_interests_process(query, store, ctx)
     except Exception as e:
-        response, code = ERRORS[INVALID_REQUEST], INVALID_REQUEST
+        response, code = str(e), INVALID_REQUEST
 
     return response, code
 
